@@ -1,0 +1,137 @@
+---
+# tasks file for solaris11
+
+# Custom Facts - START
+- name: Ensure custom facts directory exists
+  file: path=/etc/ansible/facts.d recurse=yes state=directory
+
+- name: Copy datacenter fact script
+  template: src="{{ role_path }}/templates/datacenter.sh.j2" dest=/etc/ansible/facts.d/datacenter.fact owner=root group=root mode=0744
+
+- name: reload ansible_local
+  setup: filter=ansible_local
+#  Custom Facts - END
+
+- name: Copy MOTD
+  template: src="{{ role_path }}/templates/motd.j2" dest=/etc/motd owner=root group=root mode=0644
+
+  # Copy env config files
+- copy: src="{{ role_path }}/files/configs/.cshrc" dest=/root owner=root group=root mode=0644
+
+- name: Disable unnecesary services
+  service: name={{ item }} state=stopped enabled=no
+  with_items: "{{ S11common_disabled_services }}"
+  when: item is defined
+
+- name: Setup Domain name
+  command: svccfg -s /network/nis/domain setprop config/domainname = {{ nis_domain_map[ansible_local.datacenter.location] }}
+  notify:
+  - Refresh domain
+  - Enable NIS domain
+  - Enable NIS client
+
+- name: Setup ns-switch ipnodes
+  command: svccfg -s name-service/switch setprop config/ipnodes = astring{{":"}} '("files")'
+
+- name: Setup ns-switch host
+  command: svccfg -s name-service/switch setprop config/host = astring{{":"}} '("files nis dns")'
+
+- name: Setup ns-switch password
+  command: svccfg -s name-service/switch setprop config/password = astring{{":"}} '("files nis")'
+
+- name: Setup ns-switch group
+  command: svccfg -s name-service/switch setprop config/group = astring{{":"}} '("files nis")'
+
+- name: Setup ns-switch netgroup
+  command: svccfg -s name-service/switch setprop config/netgroup = astring{{":"}} '("nis")'
+
+- name: Setup DNS datacenter
+  command: svccfg -s network/dns/client setprop config/nameserver = net_address{{":"}} {{ dns_net_address_config[ansible_local.datacenter.location] }}
+
+- name: Setup DNS servernames
+  command: svccfg -s network/dns/client setprop config/domain = astring{{":"}} {{ resolv_conf_domain[ansible_local.datacenter.location] }}
+
+- name: Setup DNS search
+  command: svccfg -s network/dns/client setprop config/search = astring{{":"}} {{ search_domains[ansible_local.datacenter.location] }}
+
+
+- name: Build resolv.conf
+  command: echo "Building resolv.conf file"
+  notify:
+  - Refresh DNS client
+  - Enable DNS client
+  - Restart DNS client
+  - Refresh NSSWITCH
+  - Restart NSSWITCH
+
+- name: create ypbind directory structure
+  file: path=/var/yp/binding/{{ nis_domain_map[ansible_local.datacenter.location] }} owner=root group=root mode=0755 recurse=yes state=directory
+
+- name: Install ypservers file
+  template: src="{{ role_path }}/templates/ypservers.j2" dest=/var/yp/binding/{{ nis_domain_map[ansible_local.datacenter.location] }}/ypservers owner=root group=root mode=0644
+
+- name: Add NIS to /etc/hosts
+  lineinfile: dest=/etc/hosts line={{ item }} insertafter=EOF create=yes state=present
+  with_items:
+  - '# NIS Servers'
+  - 'nis01'
+  - 'nis02'
+
+- name: Enable NIS Client
+  command: svcadm enable network/nis/client
+
+- name: Install ntp.conf
+  template: src="{{ role_path }}/templates/ntp.conf.j2" dest=/etc/inet/ntp.conf owner=root group=root mode=0644
+
+- name: Refresh NTP
+  command: svcadm refresh ntp
+
+- name: Start NTP
+  command: svcadm enable ntp
+
+- name: Setup timezone
+  command: svccfg -s timezone:default setprop timezone/localtime = astring{{":"}} {{ timezone[ansible_local.datacenter.location] }}
+
+- name: Configure syslog
+  template: src="{{ role_path }}/templates/syslog.conf.j2" dest=/etc/syslog.conf owner=root group=root mode=0644
+
+- name: Setup syslog-ng
+  template: src="{{ role_path }}/templates/logadm.conf.j2" dest=/etc/logadm.conf owner=root group=root mode=0644
+
+- name: Disable name-service-cache
+  command: svcadm disable name-service/cache
+
+- name: Custom kernel parameters system
+  lineinfile: dest=/etc/system line={{ item }} insertafter=EOF create=yes state=present
+  with_items:
+  - '* X6-2 tuning (Begin)'
+  - '* IP'
+  - 'set ip:ip_squeue_fanout=1'
+  - 'set ip:ip_squeue_worker_wait=0'
+  - '* Power Management (disabled due to possible bug in Solaris 10/11)'
+  - 'set idle_cpu_prefer_mwait=0'
+  - 'set idle_cpu_no_deep_c=1'
+  - '* Set tick-size to 1KHz (default is 100Hz)'
+  - 'set hires_tick=1'
+  - '* Allows a crash dump to be generated on the receipt of an NMI'
+  - 'set apix:apic_panic_on_nmi=1'
+  - '* Limit ZFS memory usage to 2GB'
+  - 'set zfs:zfs_arc_max=0x80000000'
+  - '* X6-2 tuning (End)'
+  - '* Core dump enable for hang'
+  - 'forceload: drv/pcplusmp'
+  - 'forceload: drv/apix'
+  - 'set pcplusmp:apic_panic_on_nmi=1'
+  - 'set apix:apic_panic_on_nmi=1'
+
+- name: Custom ixgbe parameters
+  lineinfile: dest=/kernel/drv/ixgbe.conf line="{{ item }}" insertafter=EOF create=yes state=present
+  with_items:
+  - '# X6-2 - IXGBE NIC - Network latency tuning (Begin)'
+  - 'flow_control=0;'
+  - 'intr_throttling=8;'
+  - 'tx_copy_threshold=1024;'
+  - 'rx_copy_threshold=1024;'
+  - 'rx_ring_size=4096;'
+  - 'tx_ring_size=4096;'
+  - '# X6-2 - IXGBE NIC - Network latency tuning (End)'

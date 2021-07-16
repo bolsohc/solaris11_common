@@ -1,0 +1,27 @@
+# ypservers - ypbind configuration file
+## {{ ansible_managed }}
+{% if ansible_all_ipv4_addresses[0].split(".")[1] == "68" %}
+nis01
+nis02
+nis01
+nis02
+{% elif ansible_all_ipv4_addresses[0].split(".")[1] == "67" %}
+nis01
+nis02
+nis01
+nis02
+{% elif ansible_all_ipv4_addresses[0].split('.')[1] == "66" %}
+nis01
+nis02
+{% endif %}
+{% set my_nameservers = ['adm-prodns01', 'adm-prodns02', 'adm-prodns03', 'adm-corpns01', 'adm-corpns02', 'adm-corpns03'] %}
+{% if ansible_domain == "domain.com" %}
+{% if ansible_hostname in my_nameservers %}
+adm-domain.com
+{% else %}
+nis10.jc.com
+{% endif %}
+{% elif ansible_domain == "jc.com" %}
+{% if ansible_hostname in my_nameservers %}
+nis10.jc.itginc.com
+{% endif %}

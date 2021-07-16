@@ -1,0 +1,19 @@
+---
+# vars file for solaris11
+
+
+# Role specific variables
+nis_domain_map:
+
+solariscommon_ns_switch: '"files nis dns"'                          # astring
+
+dns_net_address_config:
+
+resolv_conf_domain:
+
+search_domains:
+
+timezone:
+
+ntp_hosts:
+

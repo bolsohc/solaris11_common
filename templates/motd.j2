@@ -1,0 +1,14 @@
+*!*!*!*!*!*!*!*!*!*!*!*!*!*!*!*!*!*!*!*!*!*!*!*!*!*!*!*!*!*!*!*!*!*!*!*!*
+ Welcome to {{ ansible_fqdn }}
+
+ Server Stats at a Glance:
+ ------------------------
+ OS: {{ ansible_distribution }}
+ Version: {{ ansible_kernel }}
+ Python: {{ ansible_python_version }}
+
+ This server is managed using a configuration management system (Ansible).
+ Changes made to this box directly will likely be over-written by Ansible. Instead
+ modify server configuration via the configuration management git repository.
+*!*!*!*!*!*!*!*!*!*!*!*!*!*!*!*!*!*!*!*!*!*!*!*!*!*!*!*!*!*!*!*!*!*!*!*!*
+## {{ ansible_managed }}

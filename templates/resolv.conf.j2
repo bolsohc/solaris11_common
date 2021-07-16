@@ -1,0 +1,16 @@
+## {{ ansible_managed }}
+{% if ansible_all_ipv4_addresses[0].split('.')[1] == "67" %}
+nameserver 10.67.36.21
+nameserver 10.67.36.20
+nameserver 10.68.36.123
+nameserver 10.68.36.124
+{% elif ansible_all_ipv4_addresses[0].split('.')[1]  == "68" %}
+nameserver 10.68.36.123
+nameserver 10.68.36.124
+nameserver 10.67.36.21
+nameserver 10.67.36.20
+{% elif ansible_all_ipv4_addresses[0].split('.')[1] == "66" %}
+nameserver 10.66.36.13
+nameserver 10.68.36.123
+nameserver 10.68.36.124
+{% endif %}

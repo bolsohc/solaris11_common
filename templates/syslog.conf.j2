@@ -1,0 +1,79 @@
+## {{ ansible_managed }}
+{% if ansible_all_ipv4_addresses[0].split('.')[1] == "67" %}
+{% set location = "london" %}
+{% elif ansible_all_ipv4_addresses[0].split('.')[1]  == "68" %}
+{% set location = "dublin" %}
+{% elif ansible_all_ipv4_addresses[0].split('.')[1] == "66" %}
+{% set location = "stockholm" %}
+{% endif %}
+{% if location == "london" and location == "dublin" and location == "stockholm" %}
+#ident  "@(#)syslog.conf        1.5     98/12/14 SMI"   /* SunOS 5.0 */
+#
+# Copyright (c) 1991-1998 by Sun Microsystems, Inc.
+# All rights reserved.
+#
+# syslog configuration file.
+#
+# This file is processed by m4 so be careful to quote (`') names
+# that match m4 reserved words.  Also, within ifdef's, arguments
+# containing commas must be quoted.
+#
+*.err;kern.notice;auth.notice                   /dev/sysmsg
+*.err;kern.debug;daemon.notice;mail.crit        /var/adm/messages
+
+*.alert;kern.err;daemon.err                     operator
+*.alert                                         root
+
+*.emerg                                         *
+
+# if a non-loghost machine chooses to have authentication messages
+# sent to the loghost machine, un-comment out the following line:
+#auth.notice                    ifdef(`LOGHOST', /var/log/authlog, @loghost)
+
+mail.debug                      ifdef(`LOGHOST', /var/log/syslog, @loghost)
+
+#
+# non-loghost machines will use the following lines to cause "user"
+# log messages to be logged locally.
+#
+ifdef(`LOGHOST', ,
+user.err                                        /dev/sysmsg
+user.err                                        /var/adm/messages
+user.alert                                      `root, operator'
+user.emerg                                      *
+)
+{% else %}
+#ident	"@(#)syslog.conf	1.4	96/10/11 SMI"	/* SunOS 5.0 */
+#
+# Copyright (c) 1991-1993, by Sun Microsystems, Inc.
+#
+# syslog configuration file.
+#
+# This file is processed by m4 so be careful to quote (`') names
+# that match m4 reserved words.  Also, within ifdef's, arguments
+# containing commas must be quoted.
+
+# set name of remote loghost
+define(`loghost',`logger.itginc.com')
+
+# Stripped method logging - ITG special configuration. 
+kern.debug					/var/log/kern.log
+auth.debug					/var/log/auth.log
+daemon.debug					/var/log/daemon.log
+auth.debug					@loghost
+daemon.debug					@loghost
+mail.info					/var/log/mail.log
+user.debug					/var/log/user.log
+cron.debug					/var/log/cron.log
+*.err						/dev/console
+*.emerg						*
+
+# non-loghost machines will use the following lines to cause "user"
+# log messages to be logged locally.
+ifdef(`LOGHOST', ,
+user.err					/dev/console
+user.err					/var/log/messages
+user.alert					`root, operator'
+user.emerg					*
+)
+{% endif %}

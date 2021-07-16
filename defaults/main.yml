@@ -1,0 +1,13 @@
+---
+# defaults file for solaris11
+
+# Uncomment for Package install
+# S11_pkgs:
+#  -
+
+# Disable unwanted services
+S11common_disabled_services:
+  - autofs
+  - system/name-service-cache
+  - telnet
+  - rlogin

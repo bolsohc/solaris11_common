@@ -1,0 +1,32 @@
+---
+# handlers file for solaris11
+
+- name: Refresh domain
+  command: svcadm refresh network/nis/domain
+
+- name: Enable NIS domain
+  command:  svcadm enable network/nis/domain
+
+- name: Enable NIS client
+  command: svcadm enable svc:/network/nis/client:default
+
+- name: Refresh DNS client
+  command: svcadm refresh svc:/network/dns/client:default
+
+- name: Enable DNS client
+  command: svcadm enable svc:/network/dns/client:default
+
+- name: Restart DNS client
+  command: svcadm restart svc:/network/dns/client:default
+
+- name: Refresh NSSWITCH
+  command: svcadm refresh name-service/switch
+
+- name: Restart NSSWITCH
+  command: svcadm restart name-service/switch
+
+- name: Refresh Timezone
+  command: svcadm refresh timezone:default
+    
+- name: Restart NTP
+  command: svcadm restart ntp
